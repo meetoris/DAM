@@ -1,0 +1,7 @@
+[
+  { "platform": "instagram", "id": "ig-001", "title": "I automated my entire content pipeline with AI", "publishedAt": "2026-06-28", "views": 184000, "likes": 12400, "comments": 342, "shares": 2100, "retentionPct": 71, "durationSec": 38, "hook": "Nobody is talking about this, but you can automate your whole content pipeline", "topic": "ai-tools" },
+  { "platform": "instagram", "id": "ig-002", "title": "3 prompts that changed how I work", "publishedAt": "2026-06-21", "views": 96000, "likes": 7100, "comments": 188, "shares": 1450, "retentionPct": 64, "durationSec": 44, "hook": "These 3 prompts do the work of a $90k employee", "topic": "ai-tools" },
+  { "platform": "instagram", "id": "ig-003", "title": "Reacting to the new model release", "publishedAt": "2026-06-14", "views": 21000, "likes": 980, "comments": 45, "shares": 120, "retentionPct": 41, "durationSec": 58, "hook": "Did you see what just dropped?", "topic": "news-reaction" },
+  { "platform": "instagram", "id": "ig-004", "title": "Build a landing page in 10 minutes", "publishedAt": "2026-06-07", "views": 142000, "likes": 10100, "comments": 267, "shares": 3200, "retentionPct": 68, "durationSec": 33, "hook": "Watch me build a landing page before your coffee gets cold", "topic": "how-to" },
+  { "platform": "instagram", "id": "ig-005", "title": "Why your reels get 200 views", "publishedAt": "2026-05-30", "views": 67000, "likes": 4800, "comments": 510, "shares": 890, "retentionPct": 59, "durationSec": 51, "hook": "Your reels get 200 views because of this one setting", "topic": "growth" }
+]

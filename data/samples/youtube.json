@@ -1,0 +1,7 @@
+[
+  { "platform": "youtube", "id": "yt-001", "title": "I built an AI video factory in half a day", "publishedAt": "2026-06-30", "views": 240000, "likes": 15800, "comments": 620, "retentionPct": 74, "durationSec": 41, "hook": "I just built a fully automated video factory in half a day", "topic": "ai-tools" },
+  { "platform": "youtube", "id": "yt-002", "title": "Stop paying for these 5 SaaS tools", "publishedAt": "2026-06-23", "views": 118000, "likes": 8900, "comments": 410, "retentionPct": 66, "durationSec": 47, "hook": "You are paying for 5 tools AI replaced last month", "topic": "ai-tools" },
+  { "platform": "youtube", "id": "yt-003", "title": "My honest review of the new phone", "publishedAt": "2026-06-16", "views": 34000, "likes": 1700, "comments": 96, "retentionPct": 48, "durationSec": 59, "hook": "Everyone is lying to you about this phone", "topic": "review" },
+  { "platform": "youtube", "id": "yt-004", "title": "Turn one article into 10 videos", "publishedAt": "2026-06-09", "views": 156000, "likes": 11200, "comments": 380, "retentionPct": 70, "durationSec": 36, "hook": "One article. Ten videos. Here's the system.", "topic": "how-to" },
+  { "platform": "youtube", "id": "yt-005", "title": "The algorithm changed again", "publishedAt": "2026-06-02", "views": 28000, "likes": 1300, "comments": 210, "retentionPct": 44, "durationSec": 55, "hook": "The algorithm changed and nobody noticed", "topic": "news-reaction" }
+]
