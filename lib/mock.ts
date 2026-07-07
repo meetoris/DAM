@@ -88,6 +88,15 @@ export function mockBroll(short: Short): { scenes: Omit<BrollScene, "clip">[] } 
   };
 }
 
+export function mockHookVariants(short: Short): string[] {
+  const topic = (short.angle.trim() || sentences(short.source.content)[0] || "this").split(/\s+/).slice(0, 6).join(" ");
+  return [
+    `The truth about ${topic} is not what you've been told.`,
+    `Wait until you see what happens with ${topic}.`,
+    `Are you still doing ${topic} the old way?`,
+  ];
+}
+
 export function mockInsightTakeaways(): string[] {
   return [
     "- Hooks phrased as a contrarian claim ('Nobody is talking about…') outperform question hooks by ~2x on views.",

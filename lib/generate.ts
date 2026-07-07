@@ -1,11 +1,13 @@
 import { anthropicKey, demoMode, generateJSON, generateWithWebSearch } from "./ai";
-import { mockBroll, mockFactCheck, mockScript } from "./mock";
+import { mockBroll, mockFactCheck, mockHookVariants, mockScript } from "./mock";
 import {
   BROLL_SCHEMA,
   FACTCHECK_SCHEMA,
+  HOOK_VARIANTS_SCHEMA,
   SCRIPT_SCHEMA,
   brollPrompt,
   factCheckPrompt,
+  hookVariantsPrompt,
   scriptSystemPrompt,
   scriptUserPrompt,
 } from "./prompts";
@@ -97,6 +99,29 @@ export async function runFactCheck(short: Short): Promise<FactCheckResult> {
     overall: result.overall,
     claims: result.claims,
   };
+}
+
+/**
+ * Generate 3 alternate hook lines the creator can swap in with one click —
+ * adopted from the "generate N candidates, pick the strongest" pattern used
+ * by popular open-source auto-shorts generators (e.g. ShortGPT,
+ * MoneyPrinterTurbo) for their hook/title generation step.
+ */
+export async function generateHookVariants(short: Short): Promise<string[]> {
+  const script = short.scripts[short.scripts.length - 1];
+  if (!script) throw new Error("No script yet.");
+
+  if (demoMode(short.model)) return mockHookVariants(short);
+
+  const result = await generateJSON<{ hooks: string[] }>({
+    model: short.model,
+    system: scriptSystemPrompt(),
+    prompt: hookVariantsPrompt(short, script.hook),
+    schema: HOOK_VARIANTS_SCHEMA as unknown as Record<string, unknown>,
+    schemaName: "hook_variants",
+    maxTokens: 1024,
+  });
+  return result.hooks;
 }
 
 export async function planBroll(short: Short): Promise<BrollPlan> {

@@ -92,6 +92,19 @@ try {
   const shareRes = await fetch(`${BASE}/share/${id}`);
   check("share page", shareRes.ok && (await shareRes.text()).includes("shared script"));
 
+  // caption export (chunked SRT/VTT, adopted from auto-subtitle-style tools)
+  const srtRes = await fetch(`${BASE}/api/shorts/${id}/captions?format=srt`);
+  const srtText = await srtRes.text();
+  check("srt export", srtRes.ok && /^\d+\n\d{2}:\d{2}:\d{2},\d{3} --> /.test(srtText));
+  const vttRes = await fetch(`${BASE}/api/shorts/${id}/captions?format=vtt`);
+  const vttText = await vttRes.text();
+  check("vtt export", vttRes.ok && vttText.startsWith("WEBVTT") && /\d{2}:\d{2}:\d{2}\.\d{3} --> /.test(vttText));
+
+  // hook variants
+  const hooksRes = await fetch(`${BASE}/api/shorts/${id}/hooks`, { method: "POST" });
+  const hooksData = await hooksRes.json();
+  check("hook variants", hooksRes.ok && Array.isArray(hooksData.hooks) && hooksData.hooks.length === 3);
+
   // insights
   const insRes = await fetch(`${BASE}/api/insights`);
   const ins = await insRes.json();
@@ -127,17 +140,6 @@ try {
   });
   const testData = await testRes.json();
   check("connection test endpoint", testRes.ok && typeof testData.ok === "boolean" && typeof testData.message === "string");
-
-  // github trending endpoint: either live results or a clean JSON error
-  // (unauthenticated GitHub API may be rate-limited or blocked in some CIs)
-  const ghRes = await fetch(`${BASE}/api/github/trending?window=trending`);
-  const gh = await ghRes.json();
-  check(
-    "github trending endpoint",
-    (ghRes.ok && Array.isArray(gh.repos) && gh.repos.length > 0 && gh.repos[0].stars >= gh.repos.at(-1).stars) ||
-      (!ghRes.ok && typeof gh.error === "string"),
-    JSON.stringify(gh).slice(0, 120)
-  );
 
   // pages render
   for (const path of ["/new", "/insights", "/settings", `/shorts/${id}`]) {

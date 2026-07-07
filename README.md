@@ -2,14 +2,14 @@
 
 A dashboard that turns source material into a produced short-form video (Instagram Reels / YouTube Shorts) — end to end:
 
-1. **New Short** — feed it an article URL, pasted text, an uploaded file (**PDF, DOCX, or any text format**), or a **GitHub repo**: name one, browse the top 10, or leave it empty and it auto-picks the max-stars repo (trending last-30-days or all-time) and scripts a short from its README and stats. Add notes on your angle, pick a target length (30/45/60/90s) and the AI model you want writing (Claude Fable 5, Opus 4.8, Sonnet 5, Haiku 4.5, or GPT-5.5).
+1. **New Short** — feed it an article URL, pasted text, or an uploaded file (**PDF, DOCX, or any text format**), add notes on your angle, pick a target length (30/45/60/90s) and the AI model you want writing (Claude Fable 5, Opus 4.8, Sonnet 5, Haiku 4.5, or GPT-5.5).
 2. **Script** — a full, timed, section-by-section script (Hook → Context → Value → Payoff → CTA) with delivery directions, plus the **formula** it used and why.
-3. **Iterate** — give feedback and rewrite, one-click auto-optimize, regenerate with a different model, or **edit any line by hand**. Full revision history is kept.
+3. **Iterate** — give feedback and rewrite, one-click auto-optimize, regenerate with a different model, generate **3 alternate hook options** and swap in the winner with one click, or **edit any line by hand**. Full revision history is kept.
 4. **Fact-check** — every checkable claim gets a verdict (accurate / questionable / inaccurate / unverifiable), an explanation, and a corrected phrasing so you don't ship an error. With an Anthropic key configured, claims are **verified against live web search** (Sonnet 5 + the web_search server tool).
 5. **Teleprompter** — full-screen prompter with adjustable speed, font size, mirror mode (for beamsplitter rigs), and keyboard controls for recording your A-roll.
 6. **B-roll** — a timed cutaway plan (what to show, when, and why), with a matching stock clip auto-fetched from Pexels for every scene, and a one-click **download all** zip.
 7. **Performance feedback loop** — the Insights page analyzes your recent Instagram Reels and YouTube Shorts (real APIs, or bundled sample data), derives takeaways about what's working, and injects them into every future script so the writer keeps improving from your real numbers.
-8. **Export & share** — download the script as `.md` or `.doc`, copy the spoken text, or copy a read-only **share link** (`/share/<id>`) for collaborators.
+8. **Export & share** — download the script as `.md`, `.doc`, or burn-in-ready **`.srt`/`.vtt` captions** (chunked into short caption-friendly cues, not whole sentences — ready to drop into CapCut/Premiere/Descript), copy the spoken text, or copy a read-only **share link** (`/share/<id>`) for collaborators.
 9. **Settings → Integrations** — add or rotate every API credential from the UI; values are stored server-side (never echoed to the browser) and override environment variables, so no redeploy is needed.
 
 ## Quick start
@@ -42,6 +42,13 @@ docker run -p 3000:3000 -v svf-data:/app/data social-video-factory
 ```
 
 The `data/` volume persists shorts and integration settings across restarts. No database, no other services.
+
+## Adopted patterns
+
+Two capabilities are deliberately adapted from patterns common in well-known open-source auto-shorts/auto-subtitle generators (e.g. ShortGPT, MoneyPrinterTurbo, captacity/auto-subtitle) rather than invented from scratch — this app doesn't render or burn in video itself, so each pattern is adapted to fit a planning tool instead of a renderer:
+
+- **Chunked caption export (`.srt`/`.vtt`)** — these tools burn in short 3-7 word caption chunks synced to speech rather than whole-sentence subtitles, because that's what reads well on a 9:16 screen. We don't burn video, so instead we export standard subtitle files pre-chunked the same way (`lib/captions.ts`), ready to drop into whatever editor you use.
+- **Hook variant generation** — several of these tools generate multiple candidate hooks/titles and let you pick the strongest rather than committing to the first draft. The "🪝 3 hook options" button applies the same idea to just the opening line, so you can A/B it without regenerating the whole script.
 
 ## Testing
 

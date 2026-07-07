@@ -22,6 +22,8 @@ export default function ShortWorkspace() {
   const [linkCopied, setLinkCopied] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editTexts, setEditTexts] = useState<string[]>([]);
+  const [hookOptions, setHookOptions] = useState<string[] | null>(null);
+  const [hookBusy, setHookBusy] = useState(false);
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/shorts/${id}`, { cache: "no-store" });
@@ -54,8 +56,50 @@ export default function ShortWorkspace() {
       if (!res.ok) throw new Error(data.error || `${label} failed.`);
       setShort(data);
       setRevision(-1);
+      setHookOptions(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : `${label} failed.`);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function loadHookOptions() {
+    setHookBusy(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/shorts/${id}/hooks`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to generate hook options.");
+      setHookOptions(data.hooks);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to generate hook options.");
+    } finally {
+      setHookBusy(false);
+    }
+  }
+
+  async function useHook(hookText: string) {
+    if (!script) return;
+    const hookIdx = script.sections.findIndex((s) => s.name.toLowerCase() === "hook");
+    const idx = hookIdx === -1 ? 0 : hookIdx;
+    const texts = editing ? [...editTexts] : script.sections.map((s) => s.text);
+    texts[idx] = hookText;
+    setBusy("Save");
+    setError("");
+    try {
+      const res = await fetch(`/api/shorts/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sectionTexts: texts }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to apply hook.");
+      setShort(data);
+      setHookOptions(null);
+      setEditing(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to apply hook.");
     } finally {
       setBusy(null);
     }
@@ -114,6 +158,7 @@ export default function ShortWorkspace() {
     setEditTexts(script.sections.map((s) => s.text));
     setRevision(-1);
     setEditing(true);
+    setHookOptions(null);
   }
 
   async function saveEdits() {
@@ -187,7 +232,12 @@ export default function ShortWorkspace() {
             <button className="btn" onClick={copyScript}>{copied ? "Copied ✓" : "Copy script"}</button>
             <button className="btn" onClick={exportMarkdown}>Export .md</button>
             <button className="btn" onClick={exportDoc}>Export .doc</button>
+            <a className="btn" href={`/api/shorts/${id}/captions?format=srt`}>Export .srt</a>
+            <a className="btn" href={`/api/shorts/${id}/captions?format=vtt`}>Export .vtt</a>
             <button className="btn" onClick={copyShareLink}>{linkCopied ? "Link copied ✓" : "🔗 Share"}</button>
+            <button className="btn" disabled={hookBusy} onClick={loadHookOptions}>
+              {hookBusy ? (<><span className="spinner" />Writing hooks…</>) : "🪝 3 hook options"}
+            </button>
             {editing ? (
               <>
                 <button className="btn btn-primary" disabled={busy !== null} onClick={saveEdits}>
@@ -203,7 +253,7 @@ export default function ShortWorkspace() {
               <select
                 style={{ width: "auto" }}
                 value={revision === -1 ? short.scripts.length - 1 : revision}
-                onChange={(e) => setRevision(Number(e.target.value))}
+                onChange={(e) => { setRevision(Number(e.target.value)); setHookOptions(null); }}
               >
                 {short.scripts.map((s, i) => (
                   <option key={i} value={i}>
@@ -215,6 +265,21 @@ export default function ShortWorkspace() {
           </div>
 
           {script.revisionNote && <div className="muted small" style={{ marginBottom: 12 }}>{script.revisionNote}</div>}
+
+          {hookOptions && (
+            <div className="panel" style={{ marginBottom: 16 }}>
+              <div className="row" style={{ marginBottom: 10 }}>
+                <h2 style={{ margin: 0 }}>Pick a hook</h2>
+                <button className="btn btn-ghost btn-sm" style={{ marginLeft: "auto" }} onClick={() => setHookOptions(null)}>✕</button>
+              </div>
+              {hookOptions.map((h, i) => (
+                <div className="claim" key={i} style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                  <div className="grow">“{h}”</div>
+                  <button className="btn btn-sm btn-primary" disabled={busy !== null} onClick={() => useHook(h)}>Use this</button>
+                </div>
+              ))}
+            </div>
+          )}
 
           {script.sections.map((s, i) => (
             <div className="section-block" key={i}>

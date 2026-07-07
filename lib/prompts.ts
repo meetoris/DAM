@@ -55,6 +55,21 @@ export const FACTCHECK_SCHEMA = {
   additionalProperties: false,
 } as const;
 
+export const HOOK_VARIANTS_SCHEMA = {
+  type: "object",
+  properties: {
+    hooks: {
+      type: "array",
+      items: { type: "string" },
+      minItems: 3,
+      maxItems: 3,
+      description: "Exactly 3 alternative opening hook lines, each a distinct style",
+    },
+  },
+  required: ["hooks"],
+  additionalProperties: false,
+} as const;
+
 export const BROLL_SCHEMA = {
   type: "object",
   properties: {
@@ -108,6 +123,24 @@ export function scriptUserPrompt(short: Short, feedback?: string): string {
 
 function flattenScript(texts: string[]): string {
   return texts.join("\n");
+}
+
+export function hookVariantsPrompt(short: Short, currentHook: string): string {
+  return `Here is the current opening hook of a ${short.targetSeconds}-second short-form video script:
+
+"${currentHook}"
+
+Source material the video is based on:
+"""
+${short.source.content.slice(0, 8000)}
+"""
+${short.angle.trim() ? `\nCreator's angle: ${short.angle.trim()}\n` : ""}
+Write 3 alternative hooks for the same video, each a genuinely different style so the creator can pick the strongest one:
+1. A bold, contrarian claim or statement.
+2. A curiosity-gap / open-loop hook (implies something surprising without revealing it yet).
+3. A direct question that the target viewer would feel personally called out by.
+
+Each hook must be a single spoken line, 5-16 words, ready to say on camera — no hashtags, no emoji, no explanation of which style it is.`;
 }
 
 export function factCheckPrompt(scriptText: string, sourceContent: string): string {

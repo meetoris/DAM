@@ -24,10 +24,6 @@ export default function NewShort() {
   const [url, setUrl] = useState("");
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
-  const [repo, setRepo] = useState("");
-  const [githubWindow, setGithubWindow] = useState<"trending" | "all-time">("trending");
-  const [topRepos, setTopRepos] = useState<{ fullName: string; description: string; stars: number; language: string | null }[] | null>(null);
-  const [loadingRepos, setLoadingRepos] = useState(false);
   const [angle, setAngle] = useState("");
   const [targetSeconds, setTargetSeconds] = useState(45);
   const [model, setModel] = useState("claude-fable-5");
@@ -45,8 +41,6 @@ export default function NewShort() {
       form.set("url", url);
       form.set("text", text);
       if (file) form.set("file", file);
-      form.set("repo", repo);
-      form.set("githubWindow", githubWindow);
       form.set("angle", angle);
       form.set("targetSeconds", String(targetSeconds));
       form.set("model", model);
@@ -70,9 +64,9 @@ export default function NewShort() {
       <form onSubmit={submit}>
         <div className="panel" style={{ marginBottom: 18 }}>
           <div className="seg" style={{ marginBottom: 18 }}>
-            {(["url", "text", "file", "github"] as SourceType[]).map((t) => (
+            {(["url", "text", "file"] as SourceType[]).map((t) => (
               <button key={t} type="button" className={sourceType === t ? "active" : ""} onClick={() => setSourceType(t)}>
-                {t === "url" ? "Article URL" : t === "text" ? "Paste text" : t === "file" ? "Upload file" : "GitHub repo"}
+                {t === "url" ? "Article URL" : t === "text" ? "Paste text" : "Upload file"}
               </button>
             ))}
           </div>
@@ -88,64 +82,6 @@ export default function NewShort() {
               <span>Raw text</span>
               <textarea rows={8} placeholder="Paste the article, notes, transcript, or anything the script should be based on…" value={text} onChange={(e) => setText(e.target.value)} required />
             </label>
-          )}
-          {sourceType === "github" && (
-            <>
-              <label className="field">
-                <span>Repo window</span>
-                <div className="seg">
-                  <button type="button" className={githubWindow === "trending" ? "active" : ""} onClick={() => { setGithubWindow("trending"); setTopRepos(null); }}>
-                    🔥 Trending (last 30 days)
-                  </button>
-                  <button type="button" className={githubWindow === "all-time" ? "active" : ""} onClick={() => { setGithubWindow("all-time"); setTopRepos(null); }}>
-                    ⭐ Max stars all-time
-                  </button>
-                </div>
-              </label>
-              <label className="field">
-                <span>Repository (owner/name) — leave empty to auto-pick the #1 repo by stars</span>
-                <input type="text" placeholder="e.g. anthropics/claude-code — or leave empty for auto" value={repo} onChange={(e) => setRepo(e.target.value)} />
-              </label>
-              <div className="row" style={{ marginBottom: 12 }}>
-                <button
-                  type="button"
-                  className="btn btn-sm"
-                  disabled={loadingRepos}
-                  onClick={async () => {
-                    setLoadingRepos(true);
-                    try {
-                      const res = await fetch(`/api/github/trending?window=${githubWindow}`);
-                      const data = await res.json();
-                      if (!res.ok) throw new Error(data.error || "Failed to load repos.");
-                      setTopRepos(data.repos);
-                    } catch (err) {
-                      setError(err instanceof Error ? err.message : "Failed to load repos.");
-                    } finally {
-                      setLoadingRepos(false);
-                    }
-                  }}
-                >
-                  {loadingRepos ? (<><span className="spinner" />Loading…</>) : "Browse top 10"}
-                </button>
-                <span className="muted small">Its README + stats become the script&apos;s source material.</span>
-              </div>
-              {topRepos && (
-                <div style={{ marginBottom: 12 }}>
-                  {topRepos.map((r) => (
-                    <button
-                      key={r.fullName}
-                      type="button"
-                      className="btn btn-ghost btn-sm"
-                      style={{ display: "block", width: "100%", textAlign: "left", marginBottom: 4, border: repo === r.fullName ? "1px solid var(--accent)" : undefined }}
-                      onClick={() => setRepo(r.fullName)}
-                    >
-                      <strong>{r.fullName}</strong> · ⭐ {r.stars.toLocaleString()}{r.language ? ` · ${r.language}` : ""}
-                      <div className="muted small">{r.description.slice(0, 110)}</div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </>
           )}
           {sourceType === "file" && (
             <label className="field">
