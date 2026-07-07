@@ -19,6 +19,9 @@ export default function ShortWorkspace() {
   const [error, setError] = useState("");
   const [prompterOpen, setPrompterOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editTexts, setEditTexts] = useState<string[]>([]);
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/shorts/${id}`, { cache: "no-store" });
@@ -100,6 +103,39 @@ export default function ShortWorkspace() {
     setTimeout(() => setCopied(false), 1500);
   }
 
+  async function copyShareLink() {
+    await navigator.clipboard.writeText(`${window.location.origin}/share/${id}`);
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 1500);
+  }
+
+  function startEditing() {
+    if (!script) return;
+    setEditTexts(script.sections.map((s) => s.text));
+    setRevision(-1);
+    setEditing(true);
+  }
+
+  async function saveEdits() {
+    setBusy("Save");
+    setError("");
+    try {
+      const res = await fetch(`/api/shorts/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sectionTexts: editTexts }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Save failed.");
+      setShort(data);
+      setEditing(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Save failed.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function remove() {
     if (!confirm("Delete this short?")) return;
     await fetch(`/api/shorts/${id}`, { method: "DELETE" });
@@ -151,6 +187,17 @@ export default function ShortWorkspace() {
             <button className="btn" onClick={copyScript}>{copied ? "Copied ✓" : "Copy script"}</button>
             <button className="btn" onClick={exportMarkdown}>Export .md</button>
             <button className="btn" onClick={exportDoc}>Export .doc</button>
+            <button className="btn" onClick={copyShareLink}>{linkCopied ? "Link copied ✓" : "🔗 Share"}</button>
+            {editing ? (
+              <>
+                <button className="btn btn-primary" disabled={busy !== null} onClick={saveEdits}>
+                  {busy === "Save" ? (<><span className="spinner" />Saving…</>) : "Save edits"}
+                </button>
+                <button className="btn btn-ghost" onClick={() => setEditing(false)}>Cancel</button>
+              </>
+            ) : (
+              <button className="btn" onClick={startEditing}>✎ Edit</button>
+            )}
             <div className="grow" />
             {short.scripts.length > 1 && (
               <select
@@ -175,7 +222,15 @@ export default function ShortWorkspace() {
                 <span className="sec-name">{s.name}</span>
                 <span className="sec-time">{s.startSec}s → {s.endSec}s</span>
               </div>
-              <div className="sec-text">{s.text}</div>
+              {editing ? (
+                <textarea
+                  rows={2}
+                  value={editTexts[i] ?? ""}
+                  onChange={(e) => setEditTexts((prev) => prev.map((t, j) => (j === i ? e.target.value : t)))}
+                />
+              ) : (
+                <div className="sec-text">{s.text}</div>
+              )}
               <div className="sec-dir">🎥 {s.direction}</div>
             </div>
           ))}
@@ -259,9 +314,12 @@ export default function ShortWorkspace() {
               {busy === "Fact-check" ? (<><span className="spinner" />Checking claims…</>) : short.factCheck ? "Re-run fact-check" : "Run fact-check"}
             </button>
             {short.factCheck && (
-              <span className={`badge ${short.factCheck.overall === "pass" ? "good" : "warn"}`}>
-                {short.factCheck.overall === "pass" ? "✓ Pass — safe to record" : "⚠ Needs review"}
-              </span>
+              <>
+                <span className={`badge ${short.factCheck.overall === "pass" ? "good" : "warn"}`}>
+                  {short.factCheck.overall === "pass" ? "✓ Pass — safe to record" : "⚠ Needs review"}
+                </span>
+                {short.factCheck.usedWebSearch && <span className="badge accent">web-search verified</span>}
+              </>
             )}
           </div>
           {!short.factCheck && <p className="muted">Every checkable claim in the script gets a verdict, an explanation, and a corrected phrasing when needed — before you say it on camera.</p>}

@@ -4,6 +4,7 @@ import { PerformanceInsights, VideoStat } from "./types";
 import { insightsSummaryPrompt } from "./prompts";
 import { generateJSON, hasKeyFor } from "./ai";
 import { mockInsightTakeaways } from "./mock";
+import { cred } from "./settings";
 
 /**
  * The performance feedback loop: pull the creator's recent Reels/Shorts
@@ -101,8 +102,8 @@ function computeHeuristics(videos: VideoStat[]): string[] {
 }
 
 async function fetchInstagram(): Promise<[VideoStat[], boolean]> {
-  const token = process.env.INSTAGRAM_ACCESS_TOKEN;
-  const userId = process.env.INSTAGRAM_USER_ID;
+  const token = cred("instagramAccessToken");
+  const userId = cred("instagramUserId");
   if (token && userId) {
     try {
       const url = `https://graph.instagram.com/v21.0/${userId}/media?fields=id,caption,media_type,timestamp,like_count,comments_count,media_product_type&limit=25&access_token=${token}`;
@@ -141,8 +142,8 @@ async function fetchInstagram(): Promise<[VideoStat[], boolean]> {
 }
 
 async function fetchYouTube(): Promise<[VideoStat[], boolean]> {
-  const key = process.env.YOUTUBE_API_KEY;
-  const channelId = process.env.YOUTUBE_CHANNEL_ID;
+  const key = cred("youtubeApiKey");
+  const channelId = cred("youtubeChannelId");
   if (key && channelId) {
     try {
       const search = await fetch(

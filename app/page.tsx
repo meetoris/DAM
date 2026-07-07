@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { listShorts } from "@/lib/store";
+import { cred } from "@/lib/settings";
 import { MODEL_OPTIONS } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -7,9 +8,9 @@ export const dynamic = "force-dynamic";
 export default function Dashboard() {
   const shorts = listShorts();
   const keys = {
-    anthropic: Boolean(process.env.ANTHROPIC_API_KEY),
-    openai: Boolean(process.env.OPENAI_API_KEY),
-    pexels: Boolean(process.env.PEXELS_API_KEY),
+    anthropic: Boolean(cred("anthropicApiKey")),
+    openai: Boolean(cred("openaiApiKey")),
+    pexels: Boolean(cred("pexelsApiKey")),
   };
 
   return (
@@ -21,10 +22,9 @@ export default function Dashboard() {
 
       {!keys.anthropic && !keys.openai && (
         <div className="notice">
-          Demo mode: no AI keys found. Everything works with built-in placeholder generation — add{" "}
-          <span className="mono">ANTHROPIC_API_KEY</span> (and optionally{" "}
-          <span className="mono">OPENAI_API_KEY</span>, <span className="mono">PEXELS_API_KEY</span>) to{" "}
-          <span className="mono">.env</span> for real output.
+          Demo mode: no AI keys found. Everything works with built-in placeholder generation — add your API keys
+          in <Link href="/settings" style={{ textDecoration: "underline" }}>Settings → Integrations</Link> (or{" "}
+          <span className="mono">.env</span>) for real output.
         </div>
       )}
 

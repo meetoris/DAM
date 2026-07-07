@@ -20,7 +20,7 @@ export const MODEL_OPTIONS: ModelOption[] = [
   { id: "gpt-5.5", label: "GPT-5.5", provider: "openai", blurb: "OpenAI's writer, for comparison" },
 ];
 
-export type SourceType = "url" | "text" | "file";
+export type SourceType = "url" | "text" | "file" | "github";
 
 export interface ScriptSection {
   /** e.g. "Hook", "Context", "Value", "Payoff", "CTA" */

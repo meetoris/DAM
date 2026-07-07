@@ -1,0 +1,7 @@
+node_modules
+.next
+.git
+data/shorts.json
+data/settings.json
+.env
+.env.local

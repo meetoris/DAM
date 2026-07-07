@@ -1,4 +1,4 @@
-import { generateJSON, demoMode } from "./ai";
+import { anthropicKey, demoMode, generateJSON, generateWithWebSearch } from "./ai";
 import { mockBroll, mockFactCheck, mockScript } from "./mock";
 import {
   BROLL_SCHEMA,
@@ -66,23 +66,34 @@ export async function runFactCheck(short: Short): Promise<FactCheckResult> {
   if (!script) throw new Error("No script to fact-check yet.");
   const text = scriptToText(script);
 
+  const system =
+    "You are a rigorous fact-checker for a video creator. You would rather flag a borderline claim than let an error ship.";
+  const jsonInstruction = `\n\nRespond with ONLY a JSON object matching this schema (no prose before or after):\n${JSON.stringify(FACTCHECK_SCHEMA)}`;
+
   let result: { overall: "pass" | "needs_review"; claims: FactCheckClaim[] };
-  if (demoMode(short.model)) {
-    result = mockFactCheck(text);
-  } else {
+  let usedWebSearch = false;
+  if (anthropicKey()) {
+    // best path: verify claims against live web results
+    result = await generateWithWebSearch({
+      system,
+      prompt: factCheckPrompt(text, short.source.content) + jsonInstruction,
+    });
+    usedWebSearch = true;
+  } else if (!demoMode(short.model)) {
     result = await generateJSON({
       model: short.model,
-      system:
-        "You are a rigorous fact-checker for a video creator. You would rather flag a borderline claim than let an error ship.",
+      system,
       prompt: factCheckPrompt(text, short.source.content),
       schema: FACTCHECK_SCHEMA as unknown as Record<string, unknown>,
       schemaName: "fact_check",
     });
+  } else {
+    result = mockFactCheck(text);
   }
   return {
     checkedAt: new Date().toISOString(),
     model: short.model,
-    usedWebSearch: false,
+    usedWebSearch,
     overall: result.overall,
     claims: result.claims,
   };

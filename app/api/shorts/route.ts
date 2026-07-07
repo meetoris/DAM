@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { listShorts, newId, saveShort } from "@/lib/store";
 import { extractArticle } from "@/lib/extract";
+import { fileToText } from "@/lib/files";
+import { repoSource, topRepos } from "@/lib/github";
 import { getInsights } from "@/lib/performance";
 import { writeScript } from "@/lib/generate";
 import { ModelId, Short, SourceType } from "@/lib/types";
@@ -22,6 +24,8 @@ export async function POST(req: NextRequest) {
     let targetSeconds = 45;
     let model: ModelId = "claude-fable-5";
     let useInsights = true;
+    let repo = "";
+    let githubWindow: "trending" | "all-time" = "trending";
 
     const contentType = req.headers.get("content-type") ?? "";
     if (contentType.includes("multipart/form-data")) {
@@ -33,10 +37,12 @@ export async function POST(req: NextRequest) {
       targetSeconds = Number(form.get("targetSeconds") ?? 45);
       model = (String(form.get("model") ?? "claude-fable-5")) as ModelId;
       useInsights = form.get("useInsights") !== "false";
+      repo = String(form.get("repo") ?? "");
+      githubWindow = form.get("githubWindow") === "all-time" ? "all-time" : "trending";
       const file = form.get("file");
       if (file instanceof File && file.size > 0) {
         fileName = file.name;
-        text = await file.text();
+        text = await fileToText(file);
       }
     } else {
       const body = await req.json();
@@ -47,6 +53,8 @@ export async function POST(req: NextRequest) {
       targetSeconds = Number(body.targetSeconds ?? 45);
       model = body.model ?? "claude-fable-5";
       useInsights = body.useInsights !== false;
+      repo = body.repo ?? "";
+      githubWindow = body.githubWindow === "all-time" ? "all-time" : "trending";
     }
 
     let content = text;
@@ -56,6 +64,25 @@ export async function POST(req: NextRequest) {
       const article = await extractArticle(url.trim());
       content = article.content;
       title = article.title;
+    }
+    if (sourceType === "github") {
+      let fullName = repo.trim();
+      if (!fullName) {
+        // auto mode: pick the repo with max stars in the chosen window
+        const repos = await topRepos(githubWindow, 1);
+        if (!repos.length) return NextResponse.json({ error: "No repos found on GitHub right now." }, { status: 502 });
+        fullName = repos[0].fullName;
+        if (!angle.trim()) {
+          angle =
+            githubWindow === "trending"
+              ? `This repo is blowing up on GitHub right now (${repos[0].stars.toLocaleString()} stars in under a month) — explain what it does and why people care.`
+              : `One of the most-starred repos on all of GitHub — explain what it does and why it earned ${repos[0].stars.toLocaleString()} stars.`;
+        }
+      }
+      const src = await repoSource(fullName);
+      content = src.content;
+      title = src.title;
+      url = src.url;
     }
     if (!content.trim()) {
       return NextResponse.json({ error: "No source content provided." }, { status: 400 });

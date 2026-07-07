@@ -1,15 +1,21 @@
 import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 import { MODEL_OPTIONS, ModelId } from "./types";
+import { cred } from "./settings";
 
 export function providerFor(model: ModelId): "anthropic" | "openai" {
   return MODEL_OPTIONS.find((m) => m.id === model)?.provider ?? "anthropic";
 }
 
+export function anthropicKey(): string | undefined {
+  return cred("anthropicApiKey");
+}
+export function openaiKey(): string | undefined {
+  return cred("openaiApiKey");
+}
+
 export function hasKeyFor(model: ModelId): boolean {
-  return providerFor(model) === "anthropic"
-    ? Boolean(process.env.ANTHROPIC_API_KEY)
-    : Boolean(process.env.OPENAI_API_KEY);
+  return providerFor(model) === "anthropic" ? Boolean(anthropicKey()) : Boolean(openaiKey());
 }
 
 export function demoMode(model: ModelId): boolean {
@@ -36,8 +42,12 @@ export async function generateJSON<T>(args: GenerateArgs): Promise<T> {
   return generateAnthropic<T>(args);
 }
 
+function anthropicClient(): Anthropic {
+  return new Anthropic({ apiKey: anthropicKey() });
+}
+
 async function generateAnthropic<T>(args: GenerateArgs): Promise<T> {
-  const client = new Anthropic();
+  const client = anthropicClient();
   const maxTokens = args.maxTokens ?? 8192;
 
   const base = {
@@ -72,20 +82,58 @@ async function generateAnthropic<T>(args: GenerateArgs): Promise<T> {
     });
   }
 
+  throwOnRefusal(response);
+  const text = response.content.find((b) => b.type === "text");
+  if (!text || text.type !== "text") throw new Error("Model returned no text content.");
+  return parseJSON<T>(text.text);
+}
+
+/**
+ * Fact-checking grounded with live web search. Runs on Sonnet 5 (which
+ * supports the current web_search tool) regardless of the script's writer,
+ * and asks for JSON in the response text since server tools drive the turn.
+ */
+export async function generateWithWebSearch<T>(args: {
+  system: string;
+  prompt: string;
+  maxTokens?: number;
+}): Promise<T> {
+  const client = anthropicClient();
+  let messages: Anthropic.MessageParam[] = [{ role: "user", content: args.prompt }];
+
+  for (let i = 0; i < 5; i++) {
+    const response = await client.messages.create({
+      model: "claude-sonnet-5",
+      max_tokens: args.maxTokens ?? 8192,
+      thinking: { type: "adaptive" },
+      system: args.system,
+      tools: [{ type: "web_search_20260209", name: "web_search", max_uses: 5 }],
+      messages,
+    });
+    throwOnRefusal(response);
+    if (response.stop_reason === "pause_turn") {
+      // server-side tool loop paused — resend to let it resume
+      messages = [...messages, { role: "assistant", content: response.content }];
+      continue;
+    }
+    const text = response.content.filter((b) => b.type === "text").map((b) => b.text).join("\n");
+    return parseJSON<T>(text);
+  }
+  throw new Error("Web search did not complete.");
+}
+
+function throwOnRefusal(response: Anthropic.Message): void {
   if (response.stop_reason === "refusal") {
     throw new Error(
       "The model declined this request" +
         (response.stop_details?.explanation ? `: ${response.stop_details.explanation}` : ".")
     );
   }
-  const text = response.content.find((b) => b.type === "text");
-  if (!text || text.type !== "text") throw new Error("Model returned no text content.");
-  return parseJSON<T>(text.text);
 }
 
 async function generateOpenAI<T>(args: GenerateArgs): Promise<T> {
-  const client = new OpenAI();
-  const model = process.env.OPENAI_MODEL || "gpt-5.5";
+  const client = new OpenAI({ apiKey: openaiKey() });
+  const model = cred("openaiModel") || "gpt-5.5";
   const completion = await client.chat.completions.create({
     model,
     messages: [

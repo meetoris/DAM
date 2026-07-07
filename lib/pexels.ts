@@ -1,4 +1,5 @@
 import { BrollClip } from "./types";
+import { cred } from "./settings";
 
 interface PexelsVideoFile {
   quality: string;
@@ -18,7 +19,7 @@ interface PexelsVideo {
  * downloadable clip; otherwise returns a search link the creator can open.
  */
 export async function findClip(query: string): Promise<BrollClip> {
-  const key = process.env.PEXELS_API_KEY;
+  const key = cred("pexelsApiKey");
   const searchUrl = `https://www.pexels.com/search/videos/${encodeURIComponent(query)}/`;
   if (!key) return { provider: "search-link", searchUrl };
 

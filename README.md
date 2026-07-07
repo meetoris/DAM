@@ -2,14 +2,15 @@
 
 A dashboard that turns source material into a produced short-form video (Instagram Reels / YouTube Shorts) — end to end:
 
-1. **New Short** — feed it an article URL, pasted text, or an uploaded file, add notes on your angle, pick a target length (30/45/60/90s) and the AI model you want writing (Claude Fable 5, Opus 4.8, Sonnet 5, Haiku 4.5, or GPT-5.5).
+1. **New Short** — feed it an article URL, pasted text, an uploaded file (**PDF, DOCX, or any text format**), or a **GitHub repo**: name one, browse the top 10, or leave it empty and it auto-picks the max-stars repo (trending last-30-days or all-time) and scripts a short from its README and stats. Add notes on your angle, pick a target length (30/45/60/90s) and the AI model you want writing (Claude Fable 5, Opus 4.8, Sonnet 5, Haiku 4.5, or GPT-5.5).
 2. **Script** — a full, timed, section-by-section script (Hook → Context → Value → Payoff → CTA) with delivery directions, plus the **formula** it used and why.
-3. **Iterate** — give feedback and rewrite, one-click auto-optimize, or regenerate with a different model. Full revision history is kept.
-4. **Fact-check** — every checkable claim gets a verdict (accurate / questionable / inaccurate / unverifiable), an explanation, and a corrected phrasing so you don't ship an error.
+3. **Iterate** — give feedback and rewrite, one-click auto-optimize, regenerate with a different model, or **edit any line by hand**. Full revision history is kept.
+4. **Fact-check** — every checkable claim gets a verdict (accurate / questionable / inaccurate / unverifiable), an explanation, and a corrected phrasing so you don't ship an error. With an Anthropic key configured, claims are **verified against live web search** (Sonnet 5 + the web_search server tool).
 5. **Teleprompter** — full-screen prompter with adjustable speed, font size, mirror mode (for beamsplitter rigs), and keyboard controls for recording your A-roll.
 6. **B-roll** — a timed cutaway plan (what to show, when, and why), with a matching stock clip auto-fetched from Pexels for every scene, and a one-click **download all** zip.
 7. **Performance feedback loop** — the Insights page analyzes your recent Instagram Reels and YouTube Shorts (real APIs, or bundled sample data), derives takeaways about what's working, and injects them into every future script so the writer keeps improving from your real numbers.
-8. **Export** — download the script as `.md` or `.doc`, or copy the spoken text.
+8. **Export & share** — download the script as `.md` or `.doc`, copy the spoken text, or copy a read-only **share link** (`/share/<id>`) for collaborators.
+9. **Settings → Integrations** — add or rotate every API credential from the UI; values are stored server-side (never echoed to the browser) and override environment variables, so no redeploy is needed.
 
 ## Quick start
 
@@ -19,7 +20,7 @@ cp .env.example .env   # add keys (optional — see below)
 npm run dev            # http://localhost:3000
 ```
 
-**The app runs with zero configuration** in demo mode: script/fact-check/B-roll generation falls back to deterministic placeholders and the insights loop uses bundled sample data, so every feature can be exercised end to end. Add keys to unlock the real thing:
+**The app runs with zero configuration** in demo mode: script/fact-check/B-roll generation falls back to deterministic placeholders and the insights loop uses bundled sample data, so every feature can be exercised end to end. Add keys in **Settings → Integrations** (or `.env`) to unlock the real thing:
 
 | Key | Unlocks |
 | --- | --- |
@@ -30,6 +31,21 @@ npm run dev            # http://localhost:3000
 | `YOUTUBE_API_KEY` + `YOUTUBE_CHANNEL_ID` | Real Shorts stats in the feedback loop |
 
 Notes on the Anthropic integration: Fable 5 runs with server-side refusal fallbacks to Opus 4.8 enabled (beta `server-side-fallback-2026-06-01`), structured outputs (`output_config.format`) guarantee valid JSON from every generation, and adaptive thinking is used on the models that support it.
+
+Each integration has a **Test** button in Settings that makes a minimal live call (Anthropic `count_tokens`, OpenAI model list, Pexels search, IG/YT profile lookups) so you know a credential works the moment you save it.
+
+## Deploy
+
+```bash
+docker build -t social-video-factory .
+docker run -p 3000:3000 -v svf-data:/app/data social-video-factory
+```
+
+The `data/` volume persists shorts and integration settings across restarts. No database, no other services.
+
+## Testing
+
+`npm run smoke` builds nothing — run `npm run build` first, then it boots the production server and exercises every flow (create → rewrite → manual edit → fact-check → B-roll → zip → share → insights → settings round-trip). CI (`.github/workflows/ci.yml`) runs build + smoke on every PR.
 
 ## Stack
 

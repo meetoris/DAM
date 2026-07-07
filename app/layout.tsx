@@ -25,6 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/">Shorts</Link>
               <Link href="/new" className="nav-cta">＋ New Short</Link>
               <Link href="/insights">Insights</Link>
+              <Link href="/settings">Settings</Link>
             </nav>
             <div className="sidebar-foot">
               A-roll → B-roll → post.
